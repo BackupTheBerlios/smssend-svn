@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config version="1">
+<service name="nomeservizio" module="modulo">
+<!-- opzioni di setup del modulo -->
+<user></user>
+<pass></pass>
+</service>
+</config>
