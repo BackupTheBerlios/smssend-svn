@@ -157,20 +157,6 @@ def execute(param)
 end
 
 def main
-  msgricarica = "Beta 2, ritardi in Vista
-Xbox 360, ecco i titoli retrocompatibili
-Micro-sistemi eolici per kit wireless
-Tre cerottoni per i player Real
-Primo trojan buca-GDI?
-Il DRM della nuova telefonia VodafoneBeta 2, ritardi in Vista
-Xbox 360, ecco i titoli retrocompatibili
-Micro-sistemi eolici per kit wireless
-Tre cerottoni per i player Real
-Primo trojan buca-GDI?mi eolici per kit wireless
-Tre cerottoni per i player Real
-Primo trojan buca-GDI?
-Il DRM della nuova telefonia Vodafone"
-  #t.send(msg, "3405080686", nil)
   #TODO: implementare l'utilizzo di parametri
   
   $conf = Config.new(ConfPath)

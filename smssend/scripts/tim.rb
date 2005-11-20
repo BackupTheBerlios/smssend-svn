@@ -23,7 +23,7 @@ require 'http-access2'
 require 'uri'
 
 class Tim 
-  
+
   def initialize
     @setup = false
     @user = ""
@@ -40,14 +40,15 @@ class Tim
     @setup = true
   end
 
+  
   def send(msg, to, from)
     return "Eseguire setup" if @setup == false
     target = "http://webmail.posta.tim.it/login"
-    header = { "User-Agent" => "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)" }
+    header = { "User-agent" => "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)" }
     
     #pagine iniziale (per login)
     header["Referer"] = "http://webmail.posta.tim.it/login?servizio=SMS"
-    #@clnt.get(target, header)
+    
   
     #effettuare login
     login = { "servizio" => "mail", 
@@ -56,25 +57,48 @@ class Tim
       "msisdn" => @user,
       "password" => @pass }
     
-    #header["Referer"] = target
-    
     @clnt.post("http://webmail.posta.tim.it/login", login, header )  
     
     header["Referer"] = "ttp://webmail.posta.tim.it/ewsms/jsp/it_IT-TIM-UM/mainSMS.jsp?tipo=extended&locale=it_IT-TIM-UM"
     @clnt.get("http://webmail.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/composerSMS.jsp?msisdn=#{@user}&locale=it_IT-TIM-UM", header)
-
+  
+    from = "" unless from
     header["Referer"] = "http://webmail.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/composerSMS.jsp?msisdn=#{@user}&locale=it_IT-TIM-UM HTTP/1.1"
+
+
     req =  @clnt.post("http://webmail.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/sendSMS2.jsp", { "msisdn" => @user, "DEST" => to, "SENDER" => "", "chr" => "25" , "SHORT_MESSAGE" => URI.encode(msg)}, header)
+
+    res = "Impossibile stabilire l'esito"
+
+    #f = File.open("out.html","w")
+    #f.write(req.content)
+    #f.close
+    idx = req.content =~ /<font face=Verdana size=1 color=#0a256a><b>/
+
+    if (idx != nil)
+      stop = req.content[idx+43,50] =~ /<\/b>/
+      stop = 30 unless stop     #test x evitare la corruzione
+      res = req.content[idx+43,stop]
+    end
 
     @clnt.reset(target)
 
     @clnt.save_cookie_store
-    return req
+    
+    return res 
   end
 
   def remain
-    return false
+    #TENTATIVO DI IMPLEMENTAZIONE FALLITO
+    #remainpath = /var smsRimasti = \d+/
+    #composer = login().content
+    #p composer
+    #where = composer =~ remainpath
+    #return nil if where == nil
+    #return composer[where+17,3].to_i
+    false
   end
+
 end
 
 
