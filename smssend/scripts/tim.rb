@@ -47,7 +47,7 @@ class Tim
     header = { "User-agent" => "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)" }
     
     #pagine iniziale (per login)
-    header["Referer"] = "http://webmail.posta.tim.it/login?servizio=SMS"
+    header["Referer"] = "http://webmail.posta.tim.it/login?servizio=mail"
     
   
     #effettuare login
@@ -59,14 +59,14 @@ class Tim
     
     @clnt.post("http://webmail.posta.tim.it/login", login, header )  
     
-    header["Referer"] = "ttp://webmail.posta.tim.it/ewsms/jsp/it_IT-TIM-UM/mainSMS.jsp?tipo=extended&locale=it_IT-TIM-UM"
-    @clnt.get("http://webmail.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/composerSMS.jsp?msisdn=#{@user}&locale=it_IT-TIM-UM", header)
+    header["Referer"] = "ttp://weblogin.posta.tim.it/ewsms/servlet/ewsms.getSMS?tipo=extended&locale=it_IT-TIM-UM"
+    @clnt.get("http://weblogin.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/composerSMS.jsp?msisdn=#{@user}&locale=it_IT-TIM-UM", header)
   
     from = "" unless from
-    header["Referer"] = "http://webmail.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/composerSMS.jsp?msisdn=#{@user}&locale=it_IT-TIM-UM HTTP/1.1"
+    header["Referer"] = "http://weblogin.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/composerSMS.jsp?msisdn=#{@user}&locale=it_IT-TIM-UM"
 
 
-    req =  @clnt.post("http://webmail.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/sendSMS2.jsp", { "msisdn" => @user, "DEST" => to, "SENDER" => "", "chr" => "25" , "SHORT_MESSAGE" => URI.encode(msg)}, header)
+    req =  @clnt.post("http://weblogin.posta.tim.it/ews/jsp/it_IT-TIM-UM/jsp/SMS/sendSMS.jsp", { "msisdn" => @user, "locale" => "it_IT-TIM-UM", "DEST" => to, "SENDER" => "", "ABGDEST" => "", "NOME_LISTA"=>"+", "OPTWD" => "+",  "chr" => "25" , "SHORT_MESSAGE" => URI.encode(msg)}, header)
 
     res = "Impossibile stabilire l'esito"
 
