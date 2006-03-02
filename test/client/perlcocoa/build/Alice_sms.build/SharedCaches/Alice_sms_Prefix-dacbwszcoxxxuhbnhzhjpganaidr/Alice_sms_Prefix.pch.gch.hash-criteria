@@ -1,0 +1,20 @@
+Alice_sms_Prefix.pch
+4.0.0 20041026 (Apple Computer, Inc. build 4061)
+-x
+objective-c
+-arch
+ppc
+-pipe
+-Wno-trigraphs
+-fpascal-strings
+-fasm-blocks
+-g
+-O0
+-Wreturn-type
+-Wunused-variable
+-fmessage-length=0
+-fzero-link
+-mtune=G4
+-mfix-and-continue
+-F/Users/Mike/Personale_home/Programming/XCode_projects/Alice_sms/build
+-I/Users/Mike/Personale_home/Programming/XCode_projects/Alice_sms/build/include
