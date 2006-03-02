@@ -1,0 +1,239 @@
+#!/usr/bin/perl -w
+
+############################################################################
+#    Copyright (C) 2004-2005 by Fabio Marzocca                             #
+#    thesaltydog@gmail.com                                                 #
+#                                                                          #
+#    This program is free software; you can redistribute it and#or modify  #
+#    it under the terms of the GNU General Public License as published by  #
+#    the Free Software Foundation; either version 2 of the License, or     #
+#    (at your option) any later version.                                   #
+#                                                                          #
+#    This program is distributed in the hope that it will be useful,       #
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of        #
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
+#    GNU General Public License for more details.                          #
+#                                                                          #
+#    You should have received a copy of the GNU General Public License     #
+#    along with this program; if not, write to the                         #
+#    Free Software Foundation, Inc.,                                       #
+#    59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             #
+############################################################################
+
+# SMS da Alice ADSL
+# --- Rosso Alice ---
+#
+# v. 0.2.1 - Fabio Marzocca - novembre 2004 per Debian Italian Mailing List
+# - Usage: alicesms prefisso numero 'testo da inviare' (es: alicesms 348 1122321 'Buon giorno')
+#
+# v. 0.2.2 - Maurizio Manetti - 12 novembre 2004
+# - Aggiunto numero di messaggi rimasti
+#
+# v. 0.2.3 - Fabio Marzocca - 27 novembre 2004
+# - Aggiornato con modifiche url apportate da rossoalice.it
+#
+# v. 0.2.4 - 28 novembre 2004
+# - Migliorata la procedura di login
+#
+# v.0.2.5 - 30 novembre 2004
+# - Inseriti controlli su username e password
+#
+# v.1.0.0 - 10 dicembre 2004
+# - Abilitato cookie in memoria RAM
+#
+# v.1.3.0 - 4 gennaio 2005
+# - inserita compatibilita' librerie parser-perl e GNU license
+#
+# v.1.4.0 - 28 marzo 2005
+# - Inserita rubrica grazie a snake111
+# - Possibilità di avere la rubrica in qualsiasi punto del filesystem. (mattions)
+#   http://forums.gentoo.org/viewtopic-t-273527.html
+#
+# v.1.5.0 - 29 agosto 2005
+# - Modifiche necessarie a causa di aggiornamento sito rossoalice
+#
+# v 1.5.1 - Paolo Melchiorre < www.paulox.net > - 29 novembre 2005
+# - Aggiunta la possibilità di far apparire il proprio numero di casa nel campo 'mittente' 
+#   dei messaggi inviati
+#
+#
+# v.1.6.0 - 28 gennaio 2006
+# - modifiche conseguenti all'introduzione del nuovo portale alice
+#
+# =========================================================
+# Inserisci il tuo userid e passwd nelle variabili $userid e $passwd ed imposta a '1' la variabile $numeromittente se vuoi che compaia il tuo numero di casa nel campo 'mittente' dei messaggi inviati, in caso contrario lascia '0'.
+# =========================================================
+
+$userid=''; #<---------------------- modificare!!!
+$passwd=''; #<---------------------- modificare!!!
+$numeromittente='0'; #<---------------------- modificare!!!
+
+$version = '1.6.0';
+$ua=""; #the browser
+$res="";
+$LogOff = "http://www.rossoalice.it/alice/portal/service/logout.do";
+$OK = 1;
+$NOTOK= 0;
+$NUM_MSG = 10;
+$i=1;
+my $rubrica= "/home/fabio/alicerubrica"; #Inserite il Path completo dove mettete il file
+
+#Il file deve essere fatto in questo modo [senza il cancelletto davanti al nome]
+
+# tizio    328 0123456
+# caio     340 0123456
+# pluto    333 0123456
+
+# Per chi utilizza sistemi winzozz ..esempio ...[notate il doppio backslash "\\" ..]
+# nn testato ma dovrebbe andare :-)
+# my $rubrica= "C:\\Documents and Settings\\pippo\\Documenti\\rubrica
+
+use LWP::UserAgent;
+use HTTP::Cookies;
+use LWP::Simple;
+use HTML::Form;
+
+$usage = 'alicesms v. '.$version.'
+uso #1: alicesms prefisso numero "messaggio da inviare"
+
+Esempio: alicesms 335 11111111 "Arrivo fra 10 minuti."
+
+uso #2: alicesms nome_contatto "messaggio da inviare"
+
+richiede un file strutturato nel modo seguente:
+
+tizio    328 0123456
+caio     340 0123456
+pluto    333 0123456
+
+IMPORTANTE: lasciare una linea vuota alla fine del file!
+- è sconsigliato usare tabulazioni per indendare la rubrica.
+Il nome del file e la posizione assoluta dello stesso sono da definire nello script.
+';
+
+&parseCmdLine();
+&Authenticate();
+&InviaSMS();
+$ua->get($LogOff);
+
+##--------------------##
+
+sub parseCmdLine(){
+
+   if (@ARGV == 2){
+       open(RU,"<$rubrica");                    #apre il file "rubrica.txt"
+       @RUarr=readline(RU);                        #mette nell'array "FILE" tutte le linee di rubrica
+       @RUarr=sort(@RUarr);                        #ordina l'array
+       close RU;                                   #chiude il file rubrica
+       open(R,">$rubrica");                         #apre rubrica in scrittura
+       print(R @RUarr);                            #riscrive la rubrica in ordine alfabetico
+       close R;                                    #chiude il file
+       @gr=grep(/$ARGV[0]/,@RUarr);                #cerca il nome contatto nell'array che contiene la rubrica
+       if(!(grep(/$ARGV[0]/,@RUarr))){              #controllo se esiste il nome in rubrica
+           print "nessun contatto trovato\n";
+           exit 1;
+       }
+
+       @wor=split(/\s+/,$gr[0]);                   #"wor[0]" -> nome contatto, "wor[1]" -> prefisso "wor[2]" -> numero
+
+       if(@gr>1){                                  #visualizza tutto l'output della ricerca in rubrica
+           print "-> ",$gr[0];
+           while($gr[$i]){
+               print "   ",$gr[$i];
+               $i++;
+           }
+       }
+       else{
+           print $wor[0]," ",$wor[1]," ",$wor[2];              #visualizza i dati del contatto se la ricerca è univoca
+       }
+       print "\n[INVIO] per inviare sms al contatto selezionato, qualsiasi altro tasto per uscire: ";
+       $line=<STDIN>;
+       if ($line =~ /^\n/){
+           $prefix=$wor[1];
+           $number=$wor[2];
+           @pr=split(/\n/,$ARGV[1]);             #spezza il messaggio eliminando gli eventuali a capo
+           $text=join(' ', @pr);                 #ricompone il messaggio pulito da inviare
+           return;
+       }
+       else {exit 1;}
+   }
+
+   if (@ARGV == 3){
+       $prefix = $ARGV[0];
+       $number = $ARGV[1];
+       $text = $ARGV[2];
+       return
+   }
+
+   else{
+       print STDERR $usage, "\n";
+       exit 1;
+   }
+}
+
+sub Authenticate()
+{
+	$ua = new LWP::UserAgent(keep_alive=>1);
+	$ua->cookie_jar({});
+	
+	my $finalurl="http://portale.rossoalice.virgilio.it/ps/PortaleServizi.do";
+	my $username = 	$userid."\@alice.it";
+	
+	$res =
+	$ua->get("http://auth.rossoalice.virgilio.it/aap/validatecredential?login=".$username."&pwd=".$passwd."&URL_OK=".$finalurl."&servizio=sms_inviosmsalice&msisdn=".$userid."&username=".$username."&user=".$username."&a3aid=comhpvi&PASS=".$passwd."&dominio=\@alice.it&usernameDisplay=".$userid."&password=".$passwd);
+
+	
+
+	if (!($res->is_success)) {
+	       print "Login non valido! Verifica userid e password!\n";
+	       exit(1);
+	       }
+
+
+	if ($res->content =~ /username inserita non &egrave; corretta/)  {
+	       print "La username inserita non e' corretta... Prego verificare!\n";
+	       exit 1;
+	       }
+
+	if ($res->content =~ /password inserita non &egrave; corretta/)  {
+	       print "La password inserita non e' corretta... Prego verificare!\n";
+	       exit 1;
+	       }
+
+# ------------------------------------------------
+}
+
+
+
+sub InviaSMS()
+
+{
+$res = $ua->get('http://auth.rossoalice.virgilio.it/aap/serviceforwarder?sf_dest=sms_inviosmsalice');
+	
+my @form = HTML::Form->parse($res);
+
+ {
+   local $^W = 0;
+   $form[2]->value('prefisso',$prefix);
+   $form[2]->value('numDest', $number);
+   $form[2]->value('testo',$text);
+   $form[2]->value('insNumMittente',$numeromittente);
+   }
+
+$NUM_MSG = $form[0]->value('n-msg');
+
+$res = $ua->request($form[2]->click);
+
+if ($res->content =~ />OK</)  {
+      $NUM_MSG --;
+      print "Messaggio inviato!!\n";
+      print "Messaggi rimasti: $NUM_MSG\n";
+      return $OK;
+      }
+else {
+      print "Il messaggio non e' stato inviato!!\n";
+      print "Messaggi rimasti: $NUM_MSG\n";
+      return $NOTOK;
+      }
+
+}
