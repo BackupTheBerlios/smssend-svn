@@ -1,5 +1,5 @@
 /* Ctrl_invio */
-
+//Copyright Mike & Nolith
 #import <Cocoa/Cocoa.h>
 
 @interface Ctrl_invio : NSObject
